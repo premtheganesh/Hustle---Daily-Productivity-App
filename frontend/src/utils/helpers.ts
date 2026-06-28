@@ -70,35 +70,3 @@ export const getTimeGreeting = (): string => {
   if (hour < 17) return 'Afternoon';
   return 'Evening';
 };
-
-export const MOTIVATIONAL_IMAGES = [
-  {
-    id: 'goal',
-    url: 'https://images.pexels.com/photos/5598296/pexels-photo-5598296.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-    title: 'Set Your Goals',
-    description: 'Every goal achieved started with a decision to try.',
-  },
-  {
-    id: 'success',
-    url: 'https://images.pexels.com/photos/7793999/pexels-photo-7793999.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-    title: 'Celebrate Success',
-    description: 'Success is the sum of small efforts repeated day after day.',
-  },
-  {
-    id: 'thumbsup',
-    url: 'https://images.pexels.com/photos/10031271/pexels-photo-10031271.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-    title: 'Stay Positive',
-    description: 'Your attitude determines your direction.',
-  },
-  {
-    id: 'focus',
-    url: 'https://images.pexels.com/photos/5652294/pexels-photo-5652294.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-    title: 'Stay Focused',
-    description: 'Focus on being productive instead of busy.',
-  },
-];
-
-export const getDailyMotivationalImage = () => {
-  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
-  return MOTIVATIONAL_IMAGES[dayOfYear % MOTIVATIONAL_IMAGES.length];
-};

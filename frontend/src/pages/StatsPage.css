@@ -1,0 +1,235 @@
+.stats-page {
+  padding: var(--space-6) var(--space-4) 120px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.stats-header h1 {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+
+.stats-subtitle {
+  font-size: 13px;
+  color: var(--text-3);
+  margin-top: 3px;
+  font-weight: 500;
+}
+
+/* Range selector */
+.stats-range {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.range-btn {
+  background: var(--bg-2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-full);
+  padding: 6px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all var(--t-fast);
+}
+
+.range-btn.active {
+  background: rgba(99,102,241,0.15);
+  border-color: var(--primary);
+  color: var(--primary-light);
+}
+
+.stats-loading {
+  text-align: center;
+  padding: var(--space-10);
+  color: var(--text-3);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Stat cards grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  backdrop-filter: blur(12px);
+}
+
+.stat-card__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-md);
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-card__val {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.stat-card__lbl {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+/* Chart card */
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: var(--space-5);
+  backdrop-filter: blur(12px);
+}
+
+.chart-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-2);
+  margin-bottom: var(--space-4);
+}
+
+/* Bar chart */
+.bar-chart {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-end;
+  height: 120px;
+}
+
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.bar-track {
+  flex: 1;
+  width: 100%;
+  background: var(--bg-2);
+  border-radius: var(--r-sm) var(--r-sm) 2px 2px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.bar-fill {
+  width: 100%;
+  background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
+  border-radius: var(--r-sm) var(--r-sm) 2px 2px;
+  min-height: 2px;
+}
+
+.bar-fill--complete {
+  background: linear-gradient(180deg, var(--success) 0%, #059669 100%);
+}
+
+.bar-xp {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  min-height: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+/* Heatmap */
+.heatmap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.heat-cell {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid;
+  transition: transform var(--t-fast);
+  cursor: default;
+}
+
+.heat-cell:hover { transform: scale(1.2); }
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  font-size: 11px;
+  color: var(--text-4);
+  font-weight: 600;
+}
+
+.legend-cells {
+  display: flex;
+  gap: 3px;
+}
+
+.legend-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+/* Summary card */
+.summary-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: var(--space-4) var(--space-5);
+  backdrop-filter: blur(12px);
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.summary-row:last-child { border-bottom: none; }
+
+.summary-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.summary-val {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+}

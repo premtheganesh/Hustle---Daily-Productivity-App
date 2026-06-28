@@ -1,11 +1,11 @@
 {
-  "name": "DailyFire",
-  "short_name": "DailyFire",
-  "description": "Personal daily routine tracker and task scheduler",
+  "name": "Hustle",
+  "short_name": "Hustle",
+  "description": "Daily routine, tasks and goals in one place",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0A0A1A",
-  "theme_color": "#0A0A1A",
+  "background_color": "#F7F6F3",
+  "theme_color": "#5B5BD6",
   "orientation": "portrait",
   "scope": "/",
   "icons": [

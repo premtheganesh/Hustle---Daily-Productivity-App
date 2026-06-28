@@ -1,0 +1,237 @@
+.weekly-page {
+  padding: var(--space-6) var(--space-4) 120px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.weekly-header h1 {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+
+.weekly-subtitle {
+  font-size: 13px;
+  color: var(--text-3);
+  margin-top: 3px;
+  font-weight: 500;
+}
+
+/* Week nav */
+.weekly-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: var(--space-3) var(--space-4);
+  backdrop-filter: blur(12px);
+}
+
+.week-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+
+.week-nav-btn:hover:not(:disabled) { background: var(--bg-card-hover); }
+.week-nav-btn:disabled { cursor: not-allowed; }
+
+.week-nav-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.week-nav-label {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.week-nav-range {
+  font-size: 11px;
+  color: var(--text-3);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.weekly-loading {
+  text-align: center;
+  padding: var(--space-10);
+  color: var(--text-3);
+  font-size: 14px;
+}
+
+/* Chips */
+.weekly-chips {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.weekly-chip {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  backdrop-filter: blur(12px);
+}
+
+.chip-val {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.chip-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+/* Day cards */
+.weekly-days {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.weekly-day-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: var(--space-4) var(--space-5);
+  backdrop-filter: blur(12px);
+  transition: border-color var(--t-base);
+}
+
+.weekly-day-card.complete {
+  border-color: rgba(16,185,129,0.3);
+  background: rgba(16,185,129,0.04);
+}
+
+.weekly-day-card.future {
+  opacity: 0.5;
+}
+
+.weekly-day-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.weekly-day-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-3);
+  min-width: 32px;
+}
+
+.weekly-day-date {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--text);
+  flex: 1;
+}
+
+.weekly-day-check { flex-shrink: 0; }
+
+.weekly-day-bar-track {
+  height: 6px;
+  background: var(--bg-2);
+  border-radius: var(--r-full);
+  overflow: hidden;
+  margin-bottom: var(--space-2);
+}
+
+.weekly-day-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+  border-radius: var(--r-full);
+  min-width: 2px;
+}
+
+.weekly-day-bar.complete {
+  background: linear-gradient(90deg, var(--success) 0%, #059669 100%);
+}
+
+.weekly-day-stats {
+  display: flex;
+  justify-content: space-between;
+}
+
+.weekly-day-xp {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.weekly-day-tasks {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.weekly-day-upcoming {
+  font-size: 12px;
+  color: var(--text-4);
+  font-weight: 600;
+}
+
+.weekly-day-note {
+  margin-top: var(--space-2);
+  font-size: 12px;
+  color: var(--text-3);
+  font-style: italic;
+  line-height: 1.5;
+  border-left: 2px solid rgba(99,102,241,0.3);
+  padding-left: var(--space-3);
+}
+
+/* Verdict */
+.weekly-verdict {
+  background: linear-gradient(135deg, #EEF0FF 0%, #E8EAFF 60%, #EDE8FF 100%);
+  border: 1px solid rgba(99,102,241,0.25);
+  border-radius: var(--r-xl);
+  padding: var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.verdict-emoji {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.verdict-title {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.verdict-sub {
+  font-size: 13px;
+  color: var(--text-3);
+  margin-top: 3px;
+  font-weight: 500;
+}

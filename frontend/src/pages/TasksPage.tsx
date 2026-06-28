@@ -1,119 +1,204 @@
 import React, { useState } from 'react';
-import { Plus, AlertCircle, Clock, ListTodo, CheckCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Plus, AlertCircle, Clock, ListTodo, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store/appStore';
 import { OneOffTaskCard } from '../components/OneOffTaskCard';
 import { AddTaskModal } from '../components/AddTaskModal';
 import './TasksPage.css';
 
 export const TasksPage: React.FC = () => {
-  const { oneOffTasks, createOneOffTask, completeOneOffTask, deleteOneOffTask } = useAppStore();
+  const { oneOffTasks, createOneOffTask, completeOneOffTask, deleteOneOffTask, updateOneOffTask } = useAppStore();
+
   const [showModal, setShowModal] = useState(false);
-  
+  const [editingTask, setEditingTask] = useState<any | null>(null);
+  const [showCompleted, setShowCompleted] = useState(false);
+
+  const today = new Date().toISOString().split('T')[0];
+
   const pendingTasks = oneOffTasks.filter((t) => !t.is_completed);
+  const completedTasks = oneOffTasks.filter((t) => t.is_completed);
+
+  const todayTasks = pendingTasks.filter((t) => t.due_date === today);
+  const otherTasks = pendingTasks.filter((t) => t.due_date !== today);
+
   const highPriorityCount = pendingTasks.filter((t) => t.priority === 'high').length;
   const urgentCount = pendingTasks.filter((t) => {
     if (!t.due_date) return false;
-    const diff = Math.ceil((new Date(t.due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    const diff = Math.ceil((new Date(t.due_date).getTime() - Date.now()) / 86400000);
     return diff <= 1;
   }).length;
-  
+
   const handleDelete = (taskId: string) => {
-    if (window.confirm('Are you sure you want to delete this task?')) {
-      deleteOneOffTask(taskId);
-    }
+    if (window.confirm('Delete this task?')) deleteOneOffTask(taskId);
   };
-  
+
+  const handleEdit = (taskId: string) => {
+    const task = oneOffTasks.find(t => t.id === taskId);
+    if (task) setEditingTask(task);
+  };
+
+  const handleEditSubmit = (data: any) => {
+    if (editingTask) updateOneOffTask(editingTask.id, data);
+    setEditingTask(null);
+  };
+
   return (
     <div className="tasks-page">
       {/* Header */}
-      <div className="page-header">
-        <h1>Pending Tasks</h1>
-        <div className="badge-row">
-          <span className="badge">{pendingTasks.length} tasks</span>
+      <div className="tasks-header">
+        <div>
+          <h1>Tasks</h1>
+          <p className="tasks-subtitle">{pendingTasks.length} pending{completedTasks.length > 0 ? ` · ${completedTasks.length} done` : ''}</p>
+        </div>
+        <div className="tasks-badges">
           {urgentCount > 0 && (
-            <span className="badge urgent">
-              <AlertCircle size={14} />
+            <span className="tasks-badge tasks-badge--urgent">
+              <AlertCircle size={12} />
               {urgentCount} urgent
             </span>
           )}
         </div>
       </div>
-      
-      {/* Stats Card */}
-      <div className="stats-card gradient-primary">
-        <div className="stat-item">
-          <div className="stat-icon high">
-            <AlertCircle size={20} />
+
+      {/* Stats strip */}
+      <div className="tasks-stats">
+        <div className="tasks-stat">
+          <div className="tasks-stat__icon tasks-stat__icon--high">
+            <AlertCircle size={18} />
           </div>
-          <span className="stat-value">{highPriorityCount}</span>
-          <span className="stat-label">High Priority</span>
+          <span className="tasks-stat__val">{highPriorityCount}</span>
+          <span className="tasks-stat__lbl">High</span>
         </div>
-        
-        <div className="stat-divider" />
-        
-        <div className="stat-item">
-          <div className="stat-icon warning">
-            <Clock size={20} />
+        <div className="tasks-stat-divider" />
+        <div className="tasks-stat">
+          <div className="tasks-stat__icon tasks-stat__icon--warn">
+            <Clock size={18} />
           </div>
-          <span className="stat-value">{urgentCount}</span>
-          <span className="stat-label">Due Soon</span>
+          <span className="tasks-stat__val">{urgentCount}</span>
+          <span className="tasks-stat__lbl">Due Soon</span>
         </div>
-        
-        <div className="stat-divider" />
-        
-        <div className="stat-item">
-          <div className="stat-icon success">
-            <ListTodo size={20} />
+        <div className="tasks-stat-divider" />
+        <div className="tasks-stat">
+          <div className="tasks-stat__icon tasks-stat__icon--normal">
+            <ListTodo size={18} />
           </div>
-          <span className="stat-value">{pendingTasks.length}</span>
-          <span className="stat-label">Total</span>
+          <span className="tasks-stat__val">{pendingTasks.length}</span>
+          <span className="tasks-stat__lbl">Total</span>
         </div>
       </div>
-      
-      {/* Task List */}
-      {pendingTasks.length > 0 ? (
-        <div className="task-list">
-          {pendingTasks.map((task) => (
-            <OneOffTaskCard
-              key={task.id}
-              id={task.id}
-              title={task.title}
-              notes={task.notes}
-              dueDate={task.due_date}
-              priority={task.priority}
-              onComplete={completeOneOffTask}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="empty-card gradient-card">
-          <div className="empty-icon">
-            <CheckCircle size={64} color="var(--success)" />
+
+      {/* Today's tasks */}
+      {todayTasks.length > 0 && (
+        <div className="task-section">
+          <p className="task-section__label">Due Today</p>
+          <div className="task-list">
+            {todayTasks.map((task) => (
+              <OneOffTaskCard
+                key={task.id}
+                id={task.id}
+                title={task.title}
+                notes={task.notes}
+                dueDate={task.due_date}
+                priority={task.priority}
+                onComplete={completeOneOffTask}
+                onDelete={handleDelete}
+                onEdit={handleEdit}
+              />
+            ))}
           </div>
-          <h2>All caught up!</h2>
-          <p>No pending tasks. Add new tasks using the + button below.</p>
         </div>
       )}
-      
+
+      {/* Other pending tasks */}
+      {otherTasks.length > 0 ? (
+        <div className="task-section">
+          {todayTasks.length > 0 && <p className="task-section__label">Other Tasks</p>}
+          <div className="task-list">
+            {otherTasks.map((task) => (
+              <OneOffTaskCard
+                key={task.id}
+                id={task.id}
+                title={task.title}
+                notes={task.notes}
+                dueDate={task.due_date}
+                priority={task.priority}
+                onComplete={completeOneOffTask}
+                onDelete={handleDelete}
+                onEdit={handleEdit}
+              />
+            ))}
+          </div>
+        </div>
+      ) : todayTasks.length === 0 ? (
+        <motion.div
+          className="tasks-empty"
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <CheckCircle2 size={52} color="var(--success)" />
+          <h2>All clear!</h2>
+          <p>No pending tasks. Add one below.</p>
+        </motion.div>
+      ) : null}
+
+      {/* Completed section */}
+      {completedTasks.length > 0 && (
+        <div className="completed-section">
+          <button
+            className="completed-toggle"
+            onClick={() => setShowCompleted(v => !v)}
+          >
+            <CheckCircle2 size={15} color="var(--success)" />
+            <span>{completedTasks.length} completed</span>
+            {showCompleted ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+          </button>
+          <AnimatePresence>
+            {showCompleted && (
+              <motion.div
+                className="completed-list"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25 }}
+              >
+                {completedTasks.map((task) => (
+                  <div key={task.id} className="completed-task-row">
+                    <CheckCircle2 size={16} color="var(--success)" />
+                    <span className="completed-task-title">{task.title}</span>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
       {/* FAB */}
       <motion.button
-        className="fab"
+        className="tasks-fab"
         onClick={() => setShowModal(true)}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-        animate={{ scale: [1, 1.05, 1] }}
-        transition={{ duration: 2, repeat: Infinity }}
+        whileTap={{ scale: 0.92 }}
+        animate={{ y: [0, -4, 0] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <Plus size={32} />
+        <Plus size={28} />
       </motion.button>
-      
-      {/* Add Task Modal */}
+
+      {/* Add modal */}
       <AddTaskModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onSubmit={createOneOffTask}
+        mode="add"
+      />
+
+      {/* Edit modal */}
+      <AddTaskModal
+        isOpen={!!editingTask}
+        onClose={() => setEditingTask(null)}
+        onSubmit={handleEditSubmit}
+        initialData={editingTask}
+        mode="edit"
       />
     </div>
   );

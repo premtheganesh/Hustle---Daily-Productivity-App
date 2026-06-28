@@ -6,29 +6,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 
     <!-- PWA / Theme -->
-    <meta name="theme-color" content="#0A0A1A" />
-    <meta name="description" content="DailyFire - Personal Task Scheduler and Daily Routine Tracker" />
+    <meta name="theme-color" content="#F7F6F3" />
+    <meta name="description" content="Hustle - Daily routine, tasks and goals in one place" />
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
 
     <!-- iOS PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="DailyFire" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Hustle" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
 
-    <!-- Open Graph (optional, for sharing) -->
-    <meta property="og:title" content="DailyFire" />
-    <meta property="og:description" content="Personal daily routine tracker and task scheduler" />
+    <!-- Open Graph -->
+    <meta property="og:title" content="Hustle" />
+    <meta property="og:description" content="Daily routine, tasks and goals in one place" />
     <meta property="og:type" content="website" />
 
-    <title>DailyFire</title>
+    <title>Hustle</title>
     <style>
       body {
-        background: #0A0A1A;
+        background: #F7F6F3;
         margin: 0;
-        /* Support iPhone notch / safe area */
         padding-top: env(safe-area-inset-top);
         padding-bottom: env(safe-area-inset-bottom);
       }
@@ -37,7 +36,6 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- Register service worker -->
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {

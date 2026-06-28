@@ -1,155 +1,354 @@
-import React, { useState, useEffect } from 'react';
-import { Bell, Send, Info, Flame } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Bell, Sun, Moon, Stars, ChevronRight, CheckCircle2, AlertCircle, Send, Info, Zap } from 'lucide-react';
+import { useAppStore } from '../store/appStore';
 import './SettingsPage.css';
 
-const DEFAULT_REMINDERS = [
-  { id: 'morning_routine', title: 'Morning Routine', time: '7:30 AM' },
-  { id: 'job_applications_1', title: 'Job Applications', time: '9:00 AM' },
-  { id: 'study_time', title: 'Study Time', time: '11:00 AM' },
-  { id: 'job_applications_2', title: 'Job Applications', time: '2:00 PM' },
-  { id: 'gym_time', title: 'Gym Time', time: '6:00 PM' },
-  { id: 'tablets', title: '💊 TAKE TABLETS', time: '9:00 PM', critical: true },
-  { id: 'sleep_time', title: 'Sleep Time', time: '11:15 PM' },
-];
+const DEFAULT_TIMES = {
+  morning: '08:00',
+  evening: '19:30',
+  night:   '22:00',
+};
+
+const STORAGE_KEY = 'hustle_notif_settings';
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return { ...DEFAULT_TIMES, ...JSON.parse(raw) };
+  } catch {}
+  return { ...DEFAULT_TIMES };
+}
+
+function saveSettings(s: typeof DEFAULT_TIMES) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+}
+
+function getDayType() {
+  const day = new Date().getDay();
+  return day === 0 || day === 6 ? 'weekend' : 'weekday';
+}
+
+function taskMatchesDayType(task: { day_types: string }, dayType: string) {
+  if (!task.day_types || task.day_types === 'all') return true;
+  return task.day_types === dayType || task.day_types === 'all';
+}
+
+function fmt12(time24: string) {
+  const [h, m] = time24.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+}
+
+let notifInterval: ReturnType<typeof setInterval> | null = null;
+
+function startNotifLoop(
+  times: typeof DEFAULT_TIMES,
+  routineTasks: any[],
+  oneOffTasks: any[],
+  completedIds: string[]
+) {
+  if (notifInterval) clearInterval(notifInterval);
+
+  function check() {
+    if (Notification.permission !== 'granted') return;
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const today = now.toISOString().split('T')[0];
+    const dayType = getDayType();
+    const todayKey = `hustle_fired_${today}`;
+    const fired: Set<string> = new Set(JSON.parse(localStorage.getItem(todayKey) || '[]'));
+
+    const todayRoutine = routineTasks.filter(t => taskMatchesDayType(t, dayType));
+    const todayOneOff = oneOffTasks.filter(t => !t.is_completed && t.due_date === today);
+    const allTitles = [...todayRoutine.map(t => t.title), ...todayOneOff.map(t => t.title)];
+    const pendingRoutine = todayRoutine.filter(t => !completedIds.includes(t.id));
+    const doneCount = todayRoutine.length - pendingRoutine.length;
+    const totalCount = todayRoutine.length + todayOneOff.length;
+
+    const slots = [
+      {
+        id: 'morning',
+        time: times.morning,
+        build: () => ({
+          title: '⚡ Good morning — here\'s your day',
+          body: totalCount === 0
+            ? 'No tasks scheduled today. Enjoy your day!'
+            : `${totalCount} task${totalCount > 1 ? 's' : ''} today: ${allTitles.slice(0, 3).join(' · ')}${allTitles.length > 3 ? ` +${allTitles.length - 3} more` : ''}`,
+        }),
+      },
+      {
+        id: 'evening',
+        time: times.evening,
+        build: () => ({
+          title: `⚡ Evening check-in — ${doneCount}/${todayRoutine.length} done`,
+          body: pendingRoutine.length === 0
+            ? 'All routine tasks complete! Great work today.'
+            : `Still pending: ${pendingRoutine.slice(0, 3).map(t => t.title).join(' · ')}`,
+        }),
+      },
+      {
+        id: 'night',
+        time: times.night,
+        build: () => ({
+          title: `⚡ Day wrap — ${doneCount} task${doneCount !== 1 ? 's' : ''} crushed`,
+          body: 'Tomorrow\'s routine is ready. Rest up and come back stronger.',
+        }),
+      },
+    ];
+
+    slots.forEach(slot => {
+      if (fired.has(slot.id)) return;
+      const [sh, sm] = slot.time.split(':').map(Number);
+      const slotMin = sh * 60 + sm;
+      if (nowMin >= slotMin && nowMin < slotMin + 30) {
+        const { title, body } = slot.build();
+        new Notification(title, { body, icon: '/icons/icon-192.png', tag: slot.id });
+        fired.add(slot.id);
+      }
+    });
+
+    localStorage.setItem(todayKey, JSON.stringify([...fired]));
+  }
+
+  check();
+  notifInterval = setInterval(check, 10 * 60 * 1000); // every 10 min
+}
+
+const fadeUp = (delay = 0) => ({
+  initial: { opacity: 0, y: 14 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.35, delay, ease: [0.25, 0.46, 0.45, 0.94] },
+});
 
 export const SettingsPage: React.FC = () => {
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
-  
+  const { routineTasks, oneOffTasks, dailyProgress } = useAppStore();
+  const [enabled, setEnabled] = useState(false);
+  const [permission, setPermission] = useState<NotificationPermission>('default');
+  const [times, setTimes] = useState(loadSettings);
+  const [expandedSlot, setExpandedSlot] = useState<string | null>(null);
+  const [testSent, setTestSent] = useState(false);
+
+  const completedIds = dailyProgress?.completed_routine_task_ids ?? [];
+
   useEffect(() => {
-    // Check notification permission
-    if ('Notification' in window) {
-      setNotificationPermission(Notification.permission);
-    }
-    // Check if notifications were enabled
-    const enabled = localStorage.getItem('notifications_enabled') === 'true';
-    setNotificationsEnabled(enabled);
+    if ('Notification' in window) setPermission(Notification.permission);
+    const stored = localStorage.getItem('notifications_enabled') === 'true';
+    setEnabled(stored);
   }, []);
-  
-  const handleToggleNotifications = async () => {
-    if (!('Notification' in window)) {
-      alert('This browser does not support notifications');
-      return;
+
+  const restartLoop = useCallback((t: typeof DEFAULT_TIMES) => {
+    if (enabled && permission === 'granted') {
+      startNotifLoop(t, routineTasks, oneOffTasks, completedIds);
     }
-    
-    if (!notificationsEnabled) {
-      // Request permission
-      const permission = await Notification.requestPermission();
-      setNotificationPermission(permission);
-      
-      if (permission === 'granted') {
-        setNotificationsEnabled(true);
+  }, [enabled, permission, routineTasks, oneOffTasks, completedIds]);
+
+  useEffect(() => {
+    restartLoop(times);
+    return () => { if (notifInterval) clearInterval(notifInterval); };
+  }, [restartLoop, times]);
+
+  const handleToggle = async () => {
+    if (!('Notification' in window)) { alert('This browser does not support notifications'); return; }
+    if (!enabled) {
+      const perm = await Notification.requestPermission();
+      setPermission(perm);
+      if (perm === 'granted') {
+        setEnabled(true);
         localStorage.setItem('notifications_enabled', 'true');
-        alert('Reminders enabled! You will receive daily notifications.');
+        startNotifLoop(times, routineTasks, oneOffTasks, completedIds);
       } else {
         alert('Please enable notifications in your browser settings.');
       }
     } else {
-      setNotificationsEnabled(false);
+      setEnabled(false);
       localStorage.setItem('notifications_enabled', 'false');
+      if (notifInterval) clearInterval(notifInterval);
     }
   };
-  
-  const handleTestNotification = () => {
-    if (notificationPermission !== 'granted') {
-      alert('Please enable notifications first');
-      return;
-    }
-    
-    new Notification('🔥 DailyFire Test', {
-      body: 'Notifications are working! Stay focused and crush your goals!',
-      icon: '/favicon.ico',
+
+  const handleTimeChange = (slot: keyof typeof DEFAULT_TIMES, val: string) => {
+    const next = { ...times, [slot]: val };
+    setTimes(next);
+    saveSettings(next);
+    restartLoop(next);
+  };
+
+  const handleTest = () => {
+    if (permission !== 'granted') return;
+    const dayType = getDayType();
+    const today = new Date().toISOString().split('T')[0];
+    const todayRoutine = routineTasks.filter(t => taskMatchesDayType(t, dayType));
+    const todayOneOff = oneOffTasks.filter(t => !t.is_completed && t.due_date === today);
+    const total = todayRoutine.length + todayOneOff.length;
+    const allTitles = [...todayRoutine.map(t => t.title), ...todayOneOff.map(t => t.title)];
+    new Notification('⚡ Good morning — here\'s your day', {
+      body: total === 0 ? 'No tasks today!' : `${total} tasks: ${allTitles.slice(0, 3).join(' · ')}${allTitles.length > 3 ? ` +${allTitles.length - 3} more` : ''}`,
+      icon: '/icons/icon-192.png',
     });
+    setTestSent(true);
+    setTimeout(() => setTestSent(false), 3000);
   };
-  
+
+  const SLOTS = [
+    {
+      id: 'morning',
+      icon: <Sun size={18} color="#F59E0B" />,
+      iconBg: 'rgba(245,158,11,0.12)',
+      iconBorder: 'rgba(245,158,11,0.22)',
+      label: 'Morning overview',
+      desc: "Today's tasks & routine",
+    },
+    {
+      id: 'evening',
+      icon: <Moon size={18} color="var(--primary)" />,
+      iconBg: 'rgba(91,91,214,0.1)',
+      iconBorder: 'rgba(91,91,214,0.2)',
+      label: 'Evening review',
+      desc: 'Progress check-in',
+    },
+    {
+      id: 'night',
+      icon: <Stars size={18} color="#8B5CF6" />,
+      iconBg: 'rgba(139,92,246,0.1)',
+      iconBorder: 'rgba(139,92,246,0.2)',
+      label: 'Night wrap-up',
+      desc: "What you did · tomorrow's plan",
+    },
+  ] as const;
+
   return (
     <div className="settings-page">
-      {/* Header */}
-      <div className="page-header">
+      <motion.div className="settings-header" {...fadeUp(0)}>
         <h1>Settings</h1>
-        <p className="subtitle">Customize your experience</p>
-      </div>
-      
-      {/* Notifications Section */}
-      <div className="section-card gradient-card">
-        <div className="section-header">
-          <Bell size={24} color="var(--primary)" />
+        <p className="settings-subtitle">Customize your experience</p>
+      </motion.div>
+
+      {/* Notifications master toggle */}
+      <motion.div className="settings-card" {...fadeUp(0.06)}>
+        <div className="settings-card__header">
+          <div className="settings-card__icon">
+            <Bell size={18} color="var(--primary-light)" />
+          </div>
           <h2>Notifications</h2>
         </div>
-        
+
         <div className="setting-row">
           <div className="setting-info">
             <span className="setting-label">Daily Reminders</span>
-            <span className="setting-description">Get notified for your routine tasks</span>
+            <span className="setting-desc">3 smart notifications per day</span>
           </div>
-          <label className="toggle-switch">
-            <input
-              type="checkbox"
-              checked={notificationsEnabled}
-              onChange={handleToggleNotifications}
-            />
-            <span className="toggle-slider" />
+          <label className="toggle">
+            <input type="checkbox" checked={enabled} onChange={handleToggle} />
+            <span className="toggle__track"><span className="toggle__thumb" /></span>
           </label>
         </div>
-        
-        {notificationsEnabled && (
-          <div className="scheduled-info">
-            <span>✅ {DEFAULT_REMINDERS.length} reminders ready</span>
+
+        {enabled && permission === 'granted' && (
+          <div className="notification-status">
+            <CheckCircle2 size={14} color="var(--success)" />
+            <span>3 daily reminders active — pulling from your real tasks</span>
           </div>
         )}
-        
-        <button className="test-button" onClick={handleTestNotification}>
-          <Send size={18} />
-          Send Test Notification
-        </button>
-      </div>
-      
-      {/* Reminder Schedule */}
-      {notificationsEnabled && (
-        <div className="section-card gradient-card">
-          <div className="section-header">
-            <Bell size={24} color="var(--secondary)" />
-            <h2>Reminder Schedule</h2>
+
+        {permission === 'denied' && (
+          <div className="notification-blocked">
+            <AlertCircle size={14} color="var(--error)" />
+            <span>Notifications blocked. Update your browser settings to enable them.</span>
           </div>
-          
-          {DEFAULT_REMINDERS.map((reminder) => (
-            <div key={reminder.id} className="reminder-item">
-              <span className="reminder-time">{reminder.time}</span>
-              <span className={`reminder-title ${reminder.critical ? 'critical' : ''}`}>
-                {reminder.title}
-              </span>
-              <Bell size={16} color={reminder.critical ? 'var(--error)' : 'var(--success)'} />
-            </div>
+        )}
+      </motion.div>
+
+      {/* Notification slots */}
+      {enabled && permission === 'granted' && (
+        <motion.div className="settings-card notif-slots-card" {...fadeUp(0.1)}>
+          {SLOTS.map((slot, i) => (
+            <React.Fragment key={slot.id}>
+              <div
+                className={`notif-slot ${expandedSlot === slot.id ? 'notif-slot--open' : ''}`}
+                onClick={() => setExpandedSlot(expandedSlot === slot.id ? null : slot.id)}
+              >
+                <div
+                  className="notif-slot__icon"
+                  style={{ background: slot.iconBg, border: `1px solid ${slot.iconBorder}` }}
+                >
+                  {slot.icon}
+                </div>
+                <div className="notif-slot__body">
+                  <span className="notif-slot__label">{slot.label}</span>
+                  <span className="notif-slot__desc">{slot.desc}</span>
+                </div>
+                <div className="notif-slot__right">
+                  <span className="notif-slot__time">{fmt12(times[slot.id as keyof typeof times])}</span>
+                  <ChevronRight
+                    size={16}
+                    color="var(--text-4)"
+                    style={{ transform: expandedSlot === slot.id ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}
+                  />
+                </div>
+              </div>
+
+              <AnimatePresence>
+                {expandedSlot === slot.id && (
+                  <motion.div
+                    className="notif-slot__picker"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <label className="time-picker-label">Set time</label>
+                    <input
+                      type="time"
+                      className="time-picker-input"
+                      value={times[slot.id as keyof typeof times]}
+                      onChange={e => handleTimeChange(slot.id as keyof typeof DEFAULT_TIMES, e.target.value)}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {i < SLOTS.length - 1 && <div className="notif-divider" />}
+            </React.Fragment>
           ))}
-        </div>
+
+          <button
+            className={`test-btn ${permission !== 'granted' ? 'test-btn--disabled' : ''} ${testSent ? 'test-btn--sent' : ''}`}
+            onClick={handleTest}
+            disabled={permission !== 'granted'}
+          >
+            {testSent ? <CheckCircle2 size={16} /> : <Send size={16} />}
+            {testSent ? 'Sent!' : 'Preview Morning Notification'}
+          </button>
+        </motion.div>
       )}
-      
-      {/* About Section */}
-      <div className="section-card gradient-card">
-        <div className="section-header">
-          <Info size={24} color="var(--accent)" />
+
+      {/* About */}
+      <motion.div className="settings-card" {...fadeUp(0.14)}>
+        <div className="settings-card__header">
+          <div className="settings-card__icon settings-card__icon--accent">
+            <Info size={18} color="var(--accent)" />
+          </div>
           <h2>About</h2>
         </div>
-        
-        <div className="about-item">
-          <span className="about-label">App Name</span>
-          <span className="about-value">DailyFire</span>
-        </div>
-        <div className="about-item">
-          <span className="about-label">Version</span>
-          <span className="about-value">1.0.0</span>
-        </div>
-        <div className="about-item">
-          <span className="about-label">Platform</span>
-          <span className="about-value">Web</span>
-        </div>
-      </div>
-      
-      {/* Footer Message */}
-      <div className="footer-message">
-        <Flame size={24} color="var(--flame2)" />
-        <span>Stay consistent. Your future self will thank you.</span>
-      </div>
+        {[
+          { label: 'App',      value: 'Hustle' },
+          { label: 'Version',  value: '3.0.0' },
+          { label: 'Platform', value: 'Progressive Web App' },
+          { label: 'Backend',  value: 'FastAPI + SQLite' },
+        ].map(item => (
+          <div key={item.label} className="about-row">
+            <span className="about-label">{item.label}</span>
+            <span className="about-value">{item.value}</span>
+          </div>
+        ))}
+      </motion.div>
+
+      <motion.div className="settings-footer" {...fadeUp(0.18)}>
+        <Zap size={20} color="var(--primary)" />
+        <p>Stay consistent. Your future self will thank you.</p>
+      </motion.div>
     </div>
   );
 };

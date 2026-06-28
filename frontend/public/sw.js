@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dailyfire-v1';
+const CACHE_NAME = 'hustle-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

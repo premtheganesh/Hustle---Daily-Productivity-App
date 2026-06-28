@@ -20,6 +20,7 @@ interface RoutineTask {
   icon: string;
   is_critical: boolean;
   order: number;
+  day_types: string;
 }
 
 interface DailyProgress {
@@ -56,7 +57,7 @@ interface AppState {
   error: string | null;
   showCelebration: boolean;
   activeTab: string;
-  
+
   fetchProfile: () => Promise<void>;
   fetchRoutineTasks: () => Promise<void>;
   fetchDailyProgress: (date?: string) => Promise<void>;
@@ -65,11 +66,13 @@ interface AppState {
   fetchBadgesInfo: () => Promise<void>;
   toggleRoutineTask: (taskId: string) => Promise<void>;
   createOneOffTask: (task: any) => Promise<void>;
+  updateOneOffTask: (taskId: string, task: any) => Promise<void>;
   completeOneOffTask: (taskId: string) => Promise<void>;
   deleteOneOffTask: (taskId: string) => Promise<void>;
   addRoutineTask: (task: any) => Promise<void>;
   deleteRoutineTask: (taskId: string) => Promise<void>;
   updateRoutineTask: (taskId: string, task: any) => Promise<void>;
+  reorderRoutineTasks: (orderedIds: string[], dayType: string) => Promise<void>;
   setCelebration: (show: boolean) => void;
   setActiveTab: (tab: string) => void;
   initializeApp: () => Promise<void>;
@@ -86,7 +89,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   error: null,
   showCelebration: false,
   activeTab: 'home',
-  
+
   fetchProfile: async () => {
     try {
       const profile = await api.getProfile();
@@ -95,7 +98,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error('Error fetching profile:', error);
     }
   },
-  
+
   fetchRoutineTasks: async () => {
     try {
       const routineTasks = await api.getRoutineTasks();
@@ -104,7 +107,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error('Error fetching routine tasks:', error);
     }
   },
-  
+
   fetchDailyProgress: async (date?: string) => {
     try {
       const targetDate = date || getTodayString();
@@ -114,16 +117,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error('Error fetching daily progress:', error);
     }
   },
-  
+
   fetchOneOffTasks: async () => {
     try {
-      const oneOffTasks = await api.getTasks();
+      const oneOffTasks = await api.getTasks(true);
       set({ oneOffTasks });
     } catch (error: any) {
       console.error('Error fetching one-off tasks:', error);
     }
   },
-  
+
   fetchQuote: async () => {
     try {
       const quote = await api.getQuoteOfDay();
@@ -132,7 +135,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error('Error fetching quote:', error);
     }
   },
-  
+
   fetchBadgesInfo: async () => {
     try {
       const badgesInfo = await api.getBadgesInfo();
@@ -141,7 +144,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error('Error fetching badges info:', error);
     }
   },
-  
+
   toggleRoutineTask: async (taskId: string) => {
     try {
       const today = getTodayString();
@@ -155,7 +158,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error('Error toggling routine task:', error);
     }
   },
-  
+
   createOneOffTask: async (task) => {
     try {
       await api.createTask(task);
@@ -164,7 +167,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error('Error creating task:', error);
     }
   },
-  
+
+  updateOneOffTask: async (taskId: string, task: any) => {
+    try {
+      await api.updateTask(taskId, task);
+      await get().fetchOneOffTasks();
+    } catch (error: any) {
+      console.error('Error updating task:', error);
+    }
+  },
+
   completeOneOffTask: async (taskId: string) => {
     try {
       await api.completeTask(taskId);
@@ -174,7 +186,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error('Error completing task:', error);
     }
   },
-  
+
   deleteOneOffTask: async (taskId: string) => {
     try {
       await api.deleteTask(taskId);
@@ -192,7 +204,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error('Error adding routine task:', error);
     }
   },
-  
+
   deleteRoutineTask: async (taskId: string) => {
     try {
       await api.deleteRoutineTask(taskId);
@@ -201,7 +213,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error('Error deleting routine task:', error);
     }
   },
-  
+
   updateRoutineTask: async (taskId: string, task: any) => {
     try {
       await api.updateRoutineTask(taskId, task);
@@ -210,10 +222,19 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error('Error updating routine task:', error);
     }
   },
-  
+
+  reorderRoutineTasks: async (orderedIds: string[], dayType: string) => {
+    try {
+      await api.reorderRoutineTasks(orderedIds, dayType);
+      await get().fetchRoutineTasks();
+    } catch (error: any) {
+      console.error('Error reordering tasks:', error);
+    }
+  },
+
   setCelebration: (show: boolean) => set({ showCelebration: show }),
   setActiveTab: (tab: string) => set({ activeTab: tab }),
-  
+
   initializeApp: async () => {
     set({ isLoading: true, error: null });
     try {

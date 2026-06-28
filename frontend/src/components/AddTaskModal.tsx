@@ -1,25 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, AlertCircle, MinusCircle, CheckCircle } from 'lucide-react';
+import { X, Plus, AlertCircle, MinusCircle, CheckCircle, Pencil } from 'lucide-react';
 import './AddTaskModal.css';
+
+interface TaskData {
+  title: string;
+  notes: string | null;
+  due_date: string | null;
+  priority: 'high' | 'medium' | 'low';
+}
 
 interface AddTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (task: {
-    title: string;
-    notes: string | null;
-    due_date: string | null;
-    priority: 'high' | 'medium' | 'low';
-  }) => void;
+  onSubmit: (task: TaskData) => void;
+  initialData?: TaskData & { id?: string };
+  mode?: 'add' | 'edit';
 }
 
-export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onSubmit }) => {
+export const AddTaskModal: React.FC<AddTaskModalProps> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData,
+  mode = 'add',
+}) => {
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState<'high' | 'medium' | 'low'>('medium');
-  
+
+  useEffect(() => {
+    if (isOpen) {
+      setTitle(initialData?.title || '');
+      setNotes(initialData?.notes || '');
+      setDueDate(initialData?.due_date || '');
+      setPriority(initialData?.priority || 'medium');
+    }
+  }, [isOpen, initialData]);
+
   const handleSubmit = () => {
     if (!title.trim()) return;
     onSubmit({
@@ -28,19 +47,15 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onS
       due_date: dueDate || null,
       priority,
     });
-    setTitle('');
-    setNotes('');
-    setDueDate('');
-    setPriority('medium');
     onClose();
   };
-  
+
   const priorities = [
-    { value: 'high' as const, label: 'High', icon: AlertCircle, color: 'var(--priority-high)' },
-    { value: 'medium' as const, label: 'Medium', icon: MinusCircle, color: 'var(--priority-medium)' },
-    { value: 'low' as const, label: 'Low', icon: CheckCircle, color: 'var(--priority-low)' },
+    { value: 'high' as const,   label: 'High',   icon: AlertCircle,  color: 'var(--p-high)' },
+    { value: 'medium' as const, label: 'Med',    icon: MinusCircle,  color: 'var(--p-medium)' },
+    { value: 'low' as const,    label: 'Low',    icon: CheckCircle,  color: 'var(--p-low)' },
   ];
-  
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -53,18 +68,20 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onS
         >
           <motion.div
             className="modal-content"
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
             onClick={(e) => e.stopPropagation()}
           >
+            <div className="modal-handle" />
             <div className="modal-header">
-              <h2>Add New Task</h2>
+              <h2>{mode === 'edit' ? 'Edit Task' : 'New Task'}</h2>
               <button className="close-btn" onClick={onClose}>
-                <X size={24} />
+                <X size={16} />
               </button>
             </div>
-            
+
             <div className="form-group">
               <label>Task Title *</label>
               <input
@@ -72,9 +89,10 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onS
                 placeholder="What needs to be done?"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                autoFocus
               />
             </div>
-            
+
             <div className="form-group">
               <label>Notes (optional)</label>
               <textarea
@@ -84,7 +102,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onS
                 rows={3}
               />
             </div>
-            
+
             <div className="form-group">
               <label>Due Date (optional)</label>
               <input
@@ -93,7 +111,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onS
                 onChange={(e) => setDueDate(e.target.value)}
               />
             </div>
-            
+
             <div className="form-group">
               <label>Priority</label>
               <div className="priority-buttons">
@@ -103,26 +121,26 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onS
                     className={`priority-btn ${priority === p.value ? 'active' : ''}`}
                     style={{
                       borderColor: priority === p.value ? p.color : 'var(--border)',
-                      backgroundColor: priority === p.value ? `${p.color}20` : 'transparent',
+                      backgroundColor: priority === p.value ? `${p.color}18` : 'transparent',
                     }}
                     onClick={() => setPriority(p.value)}
                   >
-                    <p.icon size={20} color={priority === p.value ? p.color : 'var(--text-muted)'} />
-                    <span style={{ color: priority === p.value ? p.color : 'var(--text-muted)' }}>
+                    <p.icon size={18} color={priority === p.value ? p.color : 'var(--text-3)'} />
+                    <span style={{ color: priority === p.value ? p.color : 'var(--text-3)' }}>
                       {p.label}
                     </span>
                   </button>
                 ))}
               </div>
             </div>
-            
+
             <button
               className={`submit-btn ${!title.trim() ? 'disabled' : ''}`}
               onClick={handleSubmit}
               disabled={!title.trim()}
             >
-              <Plus size={24} />
-              Add Task
+              {mode === 'edit' ? <Pencil size={20} /> : <Plus size={20} />}
+              {mode === 'edit' ? 'Save Changes' : 'Add Task'}
             </button>
           </motion.div>
         </motion.div>
